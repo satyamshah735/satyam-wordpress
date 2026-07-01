@@ -1900,7 +1900,7 @@ function _admin_notice_post_locked() {
 		<p>
 		<a class="button" href="<?php echo esc_url( $sendback ); ?>"><?php echo $sendback_text; ?></a>
 		<?php if ( $preview_link ) { ?>
-		<a class="button<?php echo $tab_last; ?>" href="<?php echo esc_url( $preview_link ); ?>"><?php _e( 'Preview' ); ?></a>
+		<a class="button<?php echo $tab_last; ?>" href="<?php echo esc_url( $preview_link ); ?>"><?php echo esc_html_x( 'Preview', 'verb' ); ?></a>
 			<?php
 		}
 
@@ -2564,7 +2564,7 @@ function the_block_editor_meta_box_post_form_hidden_fields( $post ) {
 	$classic_output = ob_get_clean();
 
 	$classic_elements = wp_html_split( $classic_output );
-	$hidden_inputs    = '';
+
 	foreach ( $classic_elements as $element ) {
 		if ( ! str_starts_with( $element, '<input ' ) ) {
 			continue;

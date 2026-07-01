@@ -29298,13 +29298,19 @@ This message will only show in development mode. It won't appear in production. 
       })
     };
   }
+  function recordValuesMatch(a3, b3) {
+    return a3.text === b3.text && a3.start === b3.start && a3.end === b3.end;
+  }
   function useLastDifferentValue(value) {
-    const history = (0, import_element52.useRef)(/* @__PURE__ */ new Set());
-    history.current.add(value);
-    if (history.current.size > 2) {
-      history.current.delete(Array.from(history.current)[0]);
+    const history = (0, import_element52.useRef)([]);
+    const lastEntry = history.current[history.current.length - 1];
+    if (!lastEntry || !recordValuesMatch(value, lastEntry)) {
+      history.current.push(value);
     }
-    return Array.from(history.current)[0];
+    if (history.current.length > 2) {
+      history.current.shift();
+    }
+    return history.current[0];
   }
   function useAutocompleteProps(options2) {
     const ref = (0, import_element52.useRef)(null);
@@ -40063,6 +40069,11 @@ This message will only show in development mode. It won't appear in production. 
       return nextState;
     };
   }
+  var getDaysInMonth2 = (year, month) => (
+    // Take advantage of JavaScript's built-in date wrapping logic, where day 0
+    // of the next month is interpreted as the last day of the preceding month.
+    new Date(year, month + 1, 0).getDate()
+  );
   function setInConfiguredTimezone(date, updates) {
     const values = {
       year: Number((0, import_date2.date)("Y", date)),
@@ -40073,6 +40084,8 @@ This message will only show in development mode. It won't appear in production. 
       seconds: Number((0, import_date2.date)("s", date)),
       ...updates
     };
+    const daysInMonth = getDaysInMonth2(values.year, values.month);
+    values.date = Math.min(values.date, daysInMonth);
     const year = String(values.year).padStart(4, "0");
     const month = String(values.month + 1).padStart(2, "0");
     const day = String(values.date).padStart(2, "0");
@@ -40641,7 +40654,7 @@ This message will only show in development mode. It won't appear in production. 
       value: day,
       step: 1,
       min: 1,
-      max: 31,
+      max: getDaysInMonth2(Number(year), Number(month) - 1),
       required: true,
       spinControls: "none",
       isPressEnterToChange: true,
@@ -47580,7 +47593,118 @@ The screen with id ${screen.id} will not be added.`) : void 0;
 		margin-bottom: 0 !important;
 	}
 `;
-  function SandBox({
+  function buildSandBoxDocument({
+    html,
+    title,
+    type,
+    styles: styles3,
+    scripts
+  }) {
+    const htmlDoc = /* @__PURE__ */ (0, import_jsx_runtime265.jsxs)("html", {
+      lang: document.documentElement.lang,
+      className: type,
+      children: [/* @__PURE__ */ (0, import_jsx_runtime265.jsxs)("head", {
+        children: [/* @__PURE__ */ (0, import_jsx_runtime265.jsx)("title", {
+          children: title
+        }), /* @__PURE__ */ (0, import_jsx_runtime265.jsx)("style", {
+          dangerouslySetInnerHTML: {
+            __html: style
+          }
+        }), styles3.map((rules, i3) => /* @__PURE__ */ (0, import_jsx_runtime265.jsx)("style", {
+          dangerouslySetInnerHTML: {
+            __html: rules
+          }
+        }, i3))]
+      }), /* @__PURE__ */ (0, import_jsx_runtime265.jsxs)("body", {
+        "data-resizable-iframe-connected": "data-resizable-iframe-connected",
+        className: type,
+        children: [/* @__PURE__ */ (0, import_jsx_runtime265.jsx)("div", {
+          dangerouslySetInnerHTML: {
+            __html: html
+          }
+        }), /* @__PURE__ */ (0, import_jsx_runtime265.jsx)("script", {
+          type: "text/javascript",
+          dangerouslySetInnerHTML: {
+            __html: `(${observeAndResizeJS.toString()})();`
+          }
+        }), scripts.map((src) => /* @__PURE__ */ (0, import_jsx_runtime265.jsx)("script", {
+          src
+        }, src))]
+      })]
+    });
+    return "<!DOCTYPE html>" + (0, import_element189.renderToString)(htmlDoc);
+  }
+  function IsolatedSandBox({
+    html = "",
+    title = "",
+    type,
+    styles: styles3 = [],
+    scripts = [],
+    onFocus,
+    tabIndex
+  }) {
+    const ref = (0, import_element189.useRef)(null);
+    const [width, setWidth] = (0, import_element189.useState)(0);
+    const [height, setHeight] = (0, import_element189.useState)(0);
+    const srcDoc = (0, import_element189.useMemo)(() => buildSandBoxDocument({
+      html,
+      title,
+      type,
+      styles: styles3,
+      scripts
+    }), [html, title, type, styles3, scripts]);
+    (0, import_element189.useEffect)(() => {
+      const iframe = ref.current;
+      if (!iframe) {
+        return;
+      }
+      function checkMessageForResize(event) {
+        if (!iframe || iframe.contentWindow !== event.source) {
+          return;
+        }
+        let data = event.data || {};
+        if ("string" === typeof data) {
+          try {
+            data = JSON.parse(data);
+          } catch {
+          }
+        }
+        if ("resize" !== data.action) {
+          return;
+        }
+        setWidth(data.width);
+        setHeight(data.height);
+      }
+      let currentView = null;
+      function syncListener() {
+        const view = iframe?.ownerDocument?.defaultView ?? null;
+        if (view === currentView) {
+          return;
+        }
+        currentView?.removeEventListener("message", checkMessageForResize);
+        currentView = view;
+        currentView?.addEventListener("message", checkMessageForResize);
+      }
+      syncListener();
+      iframe.addEventListener("load", syncListener);
+      return () => {
+        iframe.removeEventListener("load", syncListener);
+        currentView?.removeEventListener("message", checkMessageForResize);
+      };
+    }, []);
+    return /* @__PURE__ */ (0, import_jsx_runtime265.jsx)("iframe", {
+      ref: (0, import_compose69.useMergeRefs)([ref, (0, import_compose69.useFocusableIframe)()]),
+      title,
+      tabIndex,
+      className: "components-sandbox",
+      sandbox: "allow-scripts allow-presentation",
+      srcDoc,
+      onFocus,
+      width: Math.ceil(width),
+      height: Math.ceil(height)
+    });
+  }
+  function SameOriginSandBox({
     html = "",
     title = "",
     type,
@@ -47693,6 +47817,19 @@ The screen with id ${screen.id} will not be added.`) : void 0;
       onFocus,
       width: Math.ceil(width),
       height: Math.ceil(height)
+    });
+  }
+  function SandBox({
+    allowSameOrigin = false,
+    ...contentProps
+  }) {
+    if (allowSameOrigin) {
+      return /* @__PURE__ */ (0, import_jsx_runtime265.jsx)(SameOriginSandBox, {
+        ...contentProps
+      });
+    }
+    return /* @__PURE__ */ (0, import_jsx_runtime265.jsx)(IsolatedSandBox, {
+      ...contentProps
     });
   }
   var sandbox_default = SandBox;
@@ -53148,7 +53285,7 @@ The screen with id ${screen.id} will not be added.`) : void 0;
   }
 
   // node_modules/react-day-picker/node_modules/date-fns/getDaysInMonth.js
-  function getDaysInMonth2(date, options2) {
+  function getDaysInMonth3(date, options2) {
     const _date = toDate2(date, options2?.in);
     const year = _date.getFullYear();
     const monthIndex = _date.getMonth();
@@ -53206,7 +53343,7 @@ The screen with id ${screen.id} will not be added.`) : void 0;
     const midMonth = constructFrom2(options2?.in || date, 0);
     midMonth.setFullYear(year, month, 15);
     midMonth.setHours(0, 0, 0, 0);
-    const daysInMonth = getDaysInMonth2(midMonth);
+    const daysInMonth = getDaysInMonth3(midMonth);
     _date.setMonth(month, Math.min(day, daysInMonth));
     return _date;
   }
@@ -55616,6 +55753,7 @@ The screen with id ${screen.id} will not be added.`) : void 0;
   // packages/components/build-module/validated-form-controls/validity-indicator.mjs
   var import_jsx_runtime321 = __toESM(require_jsx_runtime(), 1);
   function ValidityIndicator({
+    id: id3,
     type,
     message: message2
   }) {
@@ -55624,6 +55762,7 @@ The screen with id ${screen.id} will not be added.`) : void 0;
       invalid: error_default
     };
     return /* @__PURE__ */ (0, import_jsx_runtime321.jsxs)("p", {
+      id: id3,
       className: clsx_default("components-validated-control__indicator", `is-${type}`),
       children: [type === "validating" ? /* @__PURE__ */ (0, import_jsx_runtime321.jsx)(spinner_default, {
         className: "components-validated-control__indicator-spinner"
@@ -55747,21 +55886,44 @@ The screen with id ${screen.id} will not be added.`) : void 0;
         getValidityTarget()?.setAttribute(VALIDITY_VISIBLE_ATTRIBUTE, "");
       }
     };
-    const message2 = () => {
+    const messageId = (0, import_element246.useId)();
+    const message2 = (() => {
       if (errorMessage) {
         return /* @__PURE__ */ (0, import_jsx_runtime322.jsx)(ValidityIndicator, {
+          id: messageId,
           type: "invalid",
           message: errorMessage
         });
       }
       if (statusMessage?.type) {
         return /* @__PURE__ */ (0, import_jsx_runtime322.jsx)(ValidityIndicator, {
+          id: messageId,
           type: statusMessage.type,
           message: statusMessage.message
         });
       }
       return null;
-    };
+    })();
+    const visibleMessage = showMessage ? message2 : null;
+    (0, import_element246.useEffect)(() => {
+      const target = getValidityTarget();
+      if (!target) {
+        return;
+      }
+      function setDescribedBy(el, shouldAdd) {
+        const ids = (el.getAttribute("aria-describedby") ?? "").split(" ").filter((id3) => id3 && id3 !== messageId);
+        if (shouldAdd) {
+          ids.push(messageId);
+        }
+        if (ids.length) {
+          el.setAttribute("aria-describedby", ids.join(" "));
+        } else {
+          el.removeAttribute("aria-describedby");
+        }
+      }
+      setDescribedBy(target, !!visibleMessage);
+      return () => setDescribedBy(target, false);
+    }, [visibleMessage, messageId, getValidityTarget]);
     return /* @__PURE__ */ (0, import_jsx_runtime322.jsxs)("div", {
       className,
       ref: forwardedRef,
@@ -55771,7 +55933,7 @@ The screen with id ${screen.id} will not be added.`) : void 0;
         required
       }), /* @__PURE__ */ (0, import_jsx_runtime322.jsx)("div", {
         "aria-live": "polite",
-        children: showMessage && message2()
+        children: visibleMessage
       })]
     });
   }

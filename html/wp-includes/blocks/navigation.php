@@ -425,7 +425,11 @@ class WP_Navigation_Block_Renderer {
 			$full_template_part_id = $theme . '//' . $slug;
 			$block_template        = get_block_file_template( $full_template_part_id, 'wp_template_part' );
 			if ( isset( $block_template->content ) ) {
-				$parsed_blocks = parse_blocks( $block_template->content );
+				// Expand shortcodes before parsing blocks, matching the order in
+				// `render_block_core_template_part()`.
+				$content       = shortcode_unautop( $block_template->content );
+				$content       = do_shortcode( $content );
+				$parsed_blocks = parse_blocks( $content );
 				$blocks        = block_core_navigation_filter_out_empty_blocks( $parsed_blocks );
 				// Disable overlay menu for any navigation blocks within the overlay to prevent nested overlays.
 				$blocks = static::disable_overlay_menu_for_nested_navigation_blocks( $blocks );
@@ -449,6 +453,12 @@ class WP_Navigation_Block_Renderer {
 		// Re-serialize, and run Block Hooks algorithm to inject hooked blocks.
 		$markup = serialize_blocks( $blocks );
 		$markup = apply_block_hooks_to_content_from_post_object( $markup, $template_part_post );
+
+		// Expand shortcodes before parsing blocks, matching the order in
+		// `render_block_core_template_part()`.
+		$markup = shortcode_unautop( $markup );
+		$markup = do_shortcode( $markup );
+
 		$blocks = parse_blocks( $markup );
 
 		// Disable overlay menu for any navigation blocks within the overlay to prevent nested overlays.
@@ -697,14 +707,10 @@ class WP_Navigation_Block_Renderer {
 		if ( ! empty( $attributes['overlay'] ) ) {
 			// Get blocks from the overlay template part.
 			$overlay_blocks = static::get_overlay_blocks_from_template_part( $attributes['overlay'], $attributes );
-			// Check if overlay contains a navigation-overlay-close block.
-			$has_custom_overlay_close_block = block_core_navigation_block_tree_has_block_type(
-				$overlay_blocks,
-				'core/navigation-overlay-close',
-				array( 'core/navigation' ) // Skip navigation blocks, as they cannot contain an overlay close block
-			);
 			// Render template part blocks directly without navigation container wrapper.
 			$overlay_blocks_html = static::get_template_part_blocks_html( $overlay_blocks );
+			// Check if overlay contains a navigation-overlay-close block (detect in rendered HTML so it works with patterns).
+			$has_custom_overlay_close_block = block_core_navigation_overlay_html_has_close_block( $overlay_blocks_html );
 			// Add Interactivity API directives to the overlay close block if present.
 			if ( $has_custom_overlay_close_block && $is_interactive ) {
 				$tags                = new WP_HTML_Tag_Processor( $overlay_blocks_html );
@@ -1092,6 +1098,28 @@ if ( defined( 'IS_GUTENBERG_PLUGIN' ) && IS_GUTENBERG_PLUGIN ) {
 		$parsed_blocks           = block_core_navigation_parse_blocks_from_menu_items( $menu_items_by_parent_id[0], $menu_items_by_parent_id );
 		return new WP_Block_List( $parsed_blocks, $attributes );
 	}
+}
+
+/**
+ * Checks if the overlay HTML contains a navigation-overlay-close block.
+ *
+ * Uses WP_HTML_Tag_Processor to detect the close button in rendered output,
+ * so it works when the overlay uses patterns (pattern content is rendered at
+ * output time, not in the block tree).
+ *
+ * @since 7.0.0
+ *
+ * @param string $html The rendered overlay HTML.
+ * @return bool True if a close button element is found.
+ */
+function block_core_navigation_overlay_html_has_close_block( $html ) {
+	$tags = new WP_HTML_Tag_Processor( $html );
+	return $tags->next_tag(
+		array(
+			'tag_name'   => 'BUTTON',
+			'class_name' => 'wp-block-navigation-overlay-close',
+		)
+	);
 }
 
 /**
