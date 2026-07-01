@@ -73,3 +73,20 @@ services:
       retries: 3
       start_period: 60s
     restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql-server
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: password
+      UPLOAD_LIMIT: 2G
+    depends_on:
+      mysql-server:
+        condition: service_healthy
+    networks:
+      - my-project-network
+    restart: unless-stopped
