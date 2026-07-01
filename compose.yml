@@ -21,6 +21,7 @@ x-common-env: &common-env
   COMPOSER_ROOT_VERSION: 1.0.0
   HEALTHCHECK_PATH: /wp-json/v1/healthz
   APACHE_DOCUMENT_ROOT: /var/www/html/
+  PHP_OPCACHE_ENABLE: 1
 
 services:
   app-server:
