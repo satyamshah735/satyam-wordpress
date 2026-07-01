@@ -1,0 +1,65 @@
+### Vendor directories
+/.sonarlint/
+/html/.yarn/
+/html/coverage/
+/html/node_modules/
+/html/vendor/
+/html/wp-content/themes/intuji-headless/vendor/
+
+### Build directories
+/html/build/
+/html/bundle/
+/html/dist/
+/html/output/
+/html/wp-content/uploads/
+
+### JetBrains
+/.idea/*
+!/.idea/dictionaries/
+!/.idea/dictionaries/*.xml
+!/.idea/jsLibraryMappings.xml
+!/.idea/prettier.xml
+!/.idea/vcs.xml
+
+### Visual Studio Code
+/.vscode/*
+!/.vscode/*.json
+
+### Windows template
+*.lnk
+Thumbs.db
+[Dd]esktop.ini
+ehthumbs.db
+ehthumbs_vista.db
+
+### macOS template
+.DS_Store
+._*
+
+### Linux template
+*~
+.Trash-*
+.directory
+.fuse_hidden*
+.nfs*
+
+### Editor files
+*.cvsignore
+*.njsproj
+*.ntvs*
+*.sln
+*.suo
+*.sw?
+
+### Generated files
+*.cache
+*.key
+*.log
+.env
+/html/wp-config.php
+composer.phar
+yarn.lock
+
+# WP files and directories
+wp-config.php
+google-service-account*.json

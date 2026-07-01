@@ -1,0 +1,48 @@
+### Directories
+/.git/
+/.github/
+/.idea/
+/.vscode/
+/html/.yarn/
+/html/node_modules/
+/html/tests/
+
+### Package Files
+*.md
+.editorconfig
+.gitignore
+app-cli.sh
+compose.yml
+start-docker.sh
+
+### Windows
+*.lnk
+Thumbs.db
+[Dd]esktop.ini
+ehthumbs.db
+ehthumbs_vista.db
+
+### macOS
+.DS_Store
+._*
+
+### Linux
+*~
+.Trash-*
+.directory
+.fuse_hidden*
+.nfs*
+
+### Miscellaneous
+*.cache
+*.cvsignore
+*.key
+*.log
+*.njsproj
+*.ntvs*
+*.sln
+*.suo
+*.sw?
+
+# WP files and directories
+/html/wp-content/uploads/

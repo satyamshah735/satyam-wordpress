@@ -1,0 +1,19 @@
+# Docker Compose configuration for the my-project Server
+
+services:
+  app-server:
+    image: registry.digitalocean.com/my_project/my_project:${BUILD_TAG}
+    volumes:
+      - /mnt/my_project_site_uat/uploads/:/var/www/html/wp-content/uploads/
+      - /mnt/my_project_site_uat/wp-config.php:/var/www/html/wp-config.php
+    ports:
+      - '8080:8080'
+    environment:
+      APACHE_DOCUMENT_ROOT: /var/www/html/
+    healthcheck:
+      test: [ 'CMD', 'curl', '-f', 'http://localhost:8080/wp-json/v1/healthz' ]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped

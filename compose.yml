@@ -1,0 +1,74 @@
+# If you read this file, start docker compose with the following command:
+# bash start-docker.sh
+
+# Define networks
+networks:
+  my-project-network:
+    name: my-project-network
+    driver: bridge
+    external: true
+
+# Define volumes
+volumes:
+  my-project-mysql-data:
+    name: my-project-mysql-data
+    external: false
+
+# Define common environment variables
+x-common-env: &common-env
+  SHOW_WELCOME_MESSAGE: false
+  COMPOSER_ALLOW_SUPERUSER: 0
+  COMPOSER_ROOT_VERSION: 1.0.0
+  HEALTHCHECK_PATH: /wp-json/v1/healthz
+  APACHE_DOCUMENT_ROOT: /var/www/html/
+
+services:
+  app-server:
+    build:
+      context: .
+      dockerfile: .docker/dev-server/Dockerfile
+      args:
+        APPLICATION_GID: ${APPLICATION_GID:-1000}
+        APPLICATION_UID: ${APPLICATION_UID:-1000}
+    volumes:
+      - ./html/:/var/www/html/
+      - ./uploads/:/var/www/html/wp-content/uploads/
+      - ./wp-config.php:/var/www/html/wp-config.php
+    ports:
+      - '8080:8080'
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      <<: *common-env
+    depends_on:
+      - mysql-server
+    networks:
+      - my-project-network
+    healthcheck:
+      test: [ 'CMD', 'curl', '-f', 'http://localhost:8080/wp-json/v1/healthz' ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  mysql-server:
+    image: mysql:8.4
+    ports:
+      - '3306:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_USER: my_project
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: my_project_db
+    volumes:
+      - my-project-mysql-data:/var/lib/mysql
+    networks:
+      - my-project-network
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
