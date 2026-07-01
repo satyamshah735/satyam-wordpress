@@ -19,6 +19,16 @@ APPLICATION_GID=$(id -g)
 APPLICATION_UID=$(id -u)
 export APPLICATION_GID APPLICATION_UID
 
+# Ensure uploads directory exists with correct ownership and permissions
+if [[ ! -d uploads ]]; then
+  echo "Creating uploads directory..."
+  mkdir -p uploads
+fi
+
+echo "Setting uploads directory ownership and permissions..."
+chown -R "${APPLICATION_UID}:${APPLICATION_GID}" uploads
+chmod -R 775 uploads
+
 # Docker Compose command wrapper
 COMPOSE_CMD="docker compose --file ${COMPOSE_FILE} --project-name ${PROJECT_NAME}"
 
