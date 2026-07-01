@@ -81,7 +81,7 @@ services:
     environment:
       PMA_HOST: mysql-server
       PMA_PORT: 3306
-      PMA_USER: root
+      PMA_USER: my_project
       PMA_PASSWORD: password
       UPLOAD_LIMIT: 2G
     depends_on:
